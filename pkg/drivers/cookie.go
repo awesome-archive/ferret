@@ -2,16 +2,16 @@ package drivers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/wI2L/jettison"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -30,8 +30,6 @@ type (
 		HTTPOnly bool
 		SameSite SameSite
 	}
-
-	HTTPCookies map[string]HTTPCookie
 )
 
 const (
@@ -154,7 +152,7 @@ func (c HTTPCookie) MarshalJSON() ([]byte, error) {
 		"same_site": c.SameSite.String(),
 	}
 
-	out, err := json.Marshal(v)
+	out, err := jettison.MarshalOpts(v, jettison.NoHTMLEscaping())
 
 	if err != nil {
 		return nil, err
@@ -163,20 +161,14 @@ func (c HTTPCookie) MarshalJSON() ([]byte, error) {
 	return out, err
 }
 
-func (c HTTPCookie) GetIn(_ context.Context, path []core.Value) (core.Value, error) {
+func (c HTTPCookie) GetIn(_ context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return values.None, nil
 	}
 
 	segment := path[0]
 
-	err := core.ValidateType(segment, types.String)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	switch segment.(values.String) {
+	switch values.ToString(segment) {
 	case "name":
 		return values.NewString(c.Name), nil
 	case "value":

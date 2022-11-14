@@ -3,9 +3,10 @@ package values
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"hash/fnv"
 	"sort"
+
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -43,7 +44,7 @@ func NewObjectWith(props ...*ObjectProperty) *Object {
 }
 
 func (t *Object) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.value)
+	return jettison.MarshalOpts(t.value, jettison.NoHTMLEscaping())
 }
 
 func (t *Object) Type() core.Type {
@@ -220,10 +221,36 @@ func (t *Object) ForEach(predicate ObjectPredicate) {
 	}
 }
 
+func (t *Object) Find(predicate ObjectPredicate) (core.Value, Boolean) {
+	for idx, val := range t.value {
+		if predicate(val, idx) {
+			return val, True
+		}
+	}
+
+	return None, False
+}
+
+func (t *Object) Has(key String) Boolean {
+	_, exists := t.value[string(key)]
+
+	return NewBoolean(exists)
+}
+
 func (t *Object) MustGet(key String) core.Value {
 	val, _ := t.Get(key)
 
 	return val
+}
+
+func (t *Object) MustGetOr(key String, defaultValue core.Value) core.Value {
+	val, found := t.value[string(key)]
+
+	if found {
+		return val
+	}
+
+	return defaultValue
 }
 
 func (t *Object) Get(key String) (core.Value, Boolean) {
@@ -269,28 +296,29 @@ func (t *Object) Clone() core.Cloneable {
 	return cloned
 }
 
-func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return None, nil
 	}
 
-	if typ := path[0].Type(); typ != types.String {
-		return None, core.TypeError(typ, types.String)
-	}
-
-	first, _ := t.Get(path[0].(String))
+	segmentIdx := 0
+	first, _ := t.Get(ToString(path[segmentIdx]))
 
 	if len(path) == 1 {
 		return first, nil
 	}
 
-	getter, ok := first.(core.Getter)
-	if !ok {
-		return None, core.TypeError(
-			first.Type(),
-			core.NewType("Getter"),
-		)
+	segmentIdx++
+
+	if first == None || first == nil {
+		return None, core.NewPathError(core.ErrInvalidPath, segmentIdx)
 	}
 
-	return getter.GetIn(ctx, path[1:])
+	getter, ok := first.(core.Getter)
+
+	if !ok {
+		return GetIn(ctx, first, path[segmentIdx:])
+	}
+
+	return getter.GetIn(ctx, path[segmentIdx:])
 }

@@ -3,7 +3,6 @@ package drivers
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"net/textproto"
@@ -12,44 +11,54 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/wI2L/jettison"
 )
 
 // HTTPHeaders HTTP header object
-type HTTPHeaders map[string][]string
-
-func NewHTTPHeaders(values map[string][]string) HTTPHeaders {
-	return HTTPHeaders(values)
+type HTTPHeaders struct {
+	values map[string][]string
 }
 
-func (h HTTPHeaders) Type() core.Type {
+func NewHTTPHeaders() *HTTPHeaders {
+	return NewHTTPHeadersWith(make(map[string][]string))
+}
+
+func NewHTTPHeadersWith(values map[string][]string) *HTTPHeaders {
+	return &HTTPHeaders{values}
+}
+
+func (h *HTTPHeaders) Length() values.Int {
+	return values.NewInt(len(h.values))
+}
+
+func (h *HTTPHeaders) Type() core.Type {
 	return HTTPHeaderType
 }
 
-func (h HTTPHeaders) String() string {
+func (h *HTTPHeaders) String() string {
 	var buf bytes.Buffer
 
-	for k := range h {
+	for k := range h.values {
 		buf.WriteString(fmt.Sprintf("%s=%s;", k, h.Get(k)))
 	}
 
 	return buf.String()
 }
 
-func (h HTTPHeaders) Compare(other core.Value) int64 {
+func (h *HTTPHeaders) Compare(other core.Value) int64 {
 	if other.Type() != HTTPHeaderType {
 		return Compare(HTTPHeaderType, other.Type())
 	}
 
-	oh := other.(HTTPHeaders)
+	oh := other.(*HTTPHeaders)
 
-	if len(h) > len(oh) {
+	if len(h.values) > len(oh.values) {
 		return 1
-	} else if len(h) < len(oh) {
+	} else if len(h.values) < len(oh.values) {
 		return -1
 	}
 
-	for k := range h {
+	for k := range h.values {
 		c := strings.Compare(h.Get(k), oh.Get(k))
 
 		if c != 0 {
@@ -60,20 +69,20 @@ func (h HTTPHeaders) Compare(other core.Value) int64 {
 	return 0
 }
 
-func (h HTTPHeaders) Unwrap() interface{} {
-	return h
+func (h *HTTPHeaders) Unwrap() interface{} {
+	return h.values
 }
 
-func (h HTTPHeaders) Hash() uint64 {
+func (h *HTTPHeaders) Hash() uint64 {
 	hash := fnv.New64a()
 
 	hash.Write([]byte(h.Type().String()))
 	hash.Write([]byte(":"))
 	hash.Write([]byte("{"))
 
-	keys := make([]string, 0, len(h))
+	keys := make([]string, 0, len(h.values))
 
-	for key := range h {
+	for key := range h.values {
 		keys = append(keys, key)
 	}
 
@@ -100,18 +109,28 @@ func (h HTTPHeaders) Hash() uint64 {
 	return hash.Sum64()
 }
 
-func (h HTTPHeaders) Copy() core.Value {
-	return *(&h)
+func (h *HTTPHeaders) Copy() core.Value {
+	return &HTTPHeaders{h.values}
 }
 
-func (h HTTPHeaders) MarshalJSON() ([]byte, error) {
+func (h *HTTPHeaders) Clone() core.Cloneable {
+	cp := make(map[string][]string)
+
+	for k, v := range h.values {
+		cp[k] = v
+	}
+
+	return &HTTPHeaders{cp}
+}
+
+func (h *HTTPHeaders) MarshalJSON() ([]byte, error) {
 	headers := map[string]string{}
 
-	for key, val := range h {
+	for key, val := range h.values {
 		headers[key] = strings.Join(val, ", ")
 	}
 
-	out, err := json.Marshal(headers)
+	out, err := jettison.MarshalOpts(headers)
 
 	if err != nil {
 		return nil, err
@@ -120,26 +139,39 @@ func (h HTTPHeaders) MarshalJSON() ([]byte, error) {
 	return out, err
 }
 
-func (h HTTPHeaders) Set(key, value string) {
-	textproto.MIMEHeader(h).Set(key, value)
+func (h *HTTPHeaders) Set(key, value string) {
+	textproto.MIMEHeader(h.values).Set(key, value)
 }
 
-func (h HTTPHeaders) Get(key string) string {
-	return textproto.MIMEHeader(h).Get(key)
+func (h *HTTPHeaders) SetArr(key string, value []string) {
+	h.values[key] = value
 }
 
-func (h HTTPHeaders) GetIn(_ context.Context, path []core.Value) (core.Value, error) {
+func (h *HTTPHeaders) Get(key string) string {
+	_, found := h.values[key]
+
+	if !found {
+		return ""
+	}
+
+	return textproto.MIMEHeader(h.values).Get(key)
+}
+
+func (h *HTTPHeaders) GetIn(_ context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return values.None, nil
 	}
 
-	segment := path[0]
+	segmentIx := 0
+	segment := path[segmentIx]
 
-	err := core.ValidateType(segment, types.String)
+	return values.NewString(h.Get(string(values.ToString(segment)))), nil
+}
 
-	if err != nil {
-		return values.None, err
+func (h *HTTPHeaders) ForEach(predicate func(value []string, key string) bool) {
+	for key, val := range h.values {
+		if !predicate(val, key) {
+			break
+		}
 	}
-
-	return values.NewString(h.Get(segment.String())), nil
 }

@@ -50,8 +50,12 @@ RegexMatch: '=~';
 // Common Keywords
 For: 'FOR';
 Return: 'RETURN';
+Waitfor: 'WAITFOR';
+Options: 'OPTIONS';
+Timeout: 'TIMEOUT';
 Distinct: 'DISTINCT';
 Filter: 'FILTER';
+Current: 'CURRENT';
 Sort: 'SORT';
 Limit: 'LIMIT';
 Let: 'LET';
@@ -60,6 +64,7 @@ SortDirection: 'ASC' | 'DESC';
 None: 'NONE';
 Null: 'NULL';
 BooleanLiteral: 'TRUE' | 'true' | 'FALSE' | 'false';
+Use: 'USE';
 
 // Group operators
 Into: 'INTO';
@@ -70,14 +75,20 @@ All: 'ALL';
 Any: 'ANY';
 Aggregate: 'AGGREGATE';
 
+// Wait operators
+Event: 'EVENT';
+
 // Unary operators
 Like: 'LIKE';
 Not: 'NOT' | '!';
 In: 'IN';
+Do: 'DO';
+While: 'WHILE';
 
 // Literals
 Param: '@';
 Identifier: Letter+ (Symbols (Identifier)*)* (Digit (Identifier)*)*;
+IgnoreIdentifier: Underscore;
 StringLiteral: SQString | DQSring | BacktickString | TickString;
 IntegerLiteral: [0-9]+;
 FloatLiteral
@@ -86,6 +97,8 @@ FloatLiteral
     ;
 
 NamespaceSegment: Identifier NamespaceSeparator;
+
+UnknownIdentifier: .;
 
 // Fragments
 fragment HexDigit
@@ -101,7 +114,8 @@ fragment ExponentPart
 fragment Letter
     : 'A'..'Z' | 'a'..'z'
     ;
-fragment Symbols: '_';
+fragment Symbols: Underscore;
+fragment Underscore: '_';
 fragment Digit
     : '0'..'9'
     ;

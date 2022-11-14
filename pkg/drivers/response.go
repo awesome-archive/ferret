@@ -2,7 +2,8 @@ package drivers
 
 import (
 	"context"
-	"encoding/json"
+
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -10,11 +11,27 @@ import (
 )
 
 // HTTPResponse HTTP response object.
-type HTTPResponse struct {
-	StatusCode int
-	Status     string
-	Headers    HTTPHeaders
-}
+type (
+	HTTPResponse struct {
+		URL          string
+		StatusCode   int
+		Status       string
+		Headers      *HTTPHeaders
+		Body         []byte
+		ResponseTime float64
+	}
+
+	// responseMarshal is a structure that repeats HTTPResponse. It allows
+	// easily Marshal the HTTPResponse object.
+	responseMarshal struct {
+		URL          string       `json:"url"`
+		StatusCode   int          `json:"status_code"`
+		Status       string       `json:"status"`
+		Headers      *HTTPHeaders `json:"headers"`
+		Body         []byte       `json:"body"`
+		ResponseTime float64      `json:"response_time"`
+	}
+)
 
 func (resp *HTTPResponse) Type() core.Type {
 	return HTTPResponseType
@@ -56,34 +73,31 @@ func (resp *HTTPResponse) Hash() uint64 {
 	return values.Parse(resp).Hash()
 }
 
-// responseMarshal is a structure that repeats HTTPResponse. It allows
-// easily Marshal the HTTPResponse object.
-type responseMarshal struct {
-	StatusCode int         `json:"status_code"`
-	Status     string      `json:"status"`
-	Headers    HTTPHeaders `json:"headers"`
-}
-
 func (resp *HTTPResponse) MarshalJSON() ([]byte, error) {
 	if resp == nil {
-		return json.Marshal(values.None)
+		return values.None.MarshalJSON()
 	}
 
-	return json.Marshal(responseMarshal(*resp))
+	return jettison.MarshalOpts(responseMarshal(*resp), jettison.NoHTMLEscaping())
 }
 
-func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return resp, nil
 	}
 
-	if typ := path[0].Type(); typ != types.String {
-		return values.None, core.TypeError(typ, types.String)
+	segmentIdx := 0
+	segment := path[segmentIdx]
+
+	if typ := segment.Type(); typ != types.String {
+		return values.None, core.NewPathError(core.TypeError(typ, types.String), segmentIdx)
 	}
 
-	field := path[0].(values.String).String()
+	field := segment.String()
 
 	switch field {
+	case "url", "URL":
+		return values.NewString(resp.URL), nil
 	case "status":
 		return values.NewString(resp.Status), nil
 	case "statusCode":
@@ -93,7 +107,17 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 			return resp.Headers, nil
 		}
 
-		return resp.Headers.GetIn(ctx, path[1:])
+		out, pathErr := resp.Headers.GetIn(ctx, path[1:])
+
+		if pathErr != nil {
+			return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+		}
+
+		return out, nil
+	case "body":
+		return values.NewBinary(resp.Body), nil
+	case "responseTime":
+		return values.NewFloat(resp.ResponseTime), nil
 	}
 
 	return values.None, nil

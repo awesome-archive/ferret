@@ -10,9 +10,9 @@ import (
 )
 
 // INNER_TEXT_SET sets inner text string to a given or matched by CSS selector element
-// @param doc (Open|GetElement) - Parent document or element.
-// @param selector (String, optional) - String of CSS selector.
-// @param innerText (String) - String of inner text.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} textOrCssSelector - String of CSS selector.
+// @param {String} [text] - String of inner text.
 func SetInnerText(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
@@ -36,19 +36,18 @@ func SetInnerText(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, el.SetInnerText(ctx, values.ToString(args[1]))
 	}
 
-	err = core.ValidateType(args[1], types.String)
-
-	if err != nil {
-		return values.None, err
-	}
-
 	err = core.ValidateType(args[2], types.String)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	selector := values.ToString(args[1])
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
+
 	innerHTML := values.ToString(args[2])
 
 	return values.None, el.SetInnerTextBySelector(ctx, selector, innerHTML)

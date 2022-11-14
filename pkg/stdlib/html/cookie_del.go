@@ -10,8 +10,8 @@ import (
 )
 
 // COOKIE_DEL gets a cookie from a given page by name.
-// @param page (HTMLPage) - Target page.
-// @param cookie (...HTTPCookie|String) - Cookie or cookie name to delete.
+// @param {HTMLPage} page - Target page.
+// @param {HTTPCookie, repeated | String, repeated} cookiesOrNames - Cookie or cookie name to delete.
 func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 
@@ -26,8 +26,8 @@ func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	inputs := args[1:]
-	var currentCookies *values.Array
-	cookies := make([]drivers.HTTPCookie, 0, len(inputs))
+	var currentCookies *drivers.HTTPCookies
+	cookies := drivers.NewHTTPCookies()
 
 	for _, c := range inputs {
 		switch cookie := c.(type) {
@@ -42,23 +42,18 @@ func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 				currentCookies = current
 			}
 
-			found, isFound := currentCookies.Find(func(value core.Value, _ int) bool {
-				cv := value.(drivers.HTTPCookie)
-
-				return cv.Name == cookie.String()
-			})
+			found, isFound := currentCookies.Get(cookie)
 
 			if isFound {
-				cookies = append(cookies, found.(drivers.HTTPCookie))
+				cookies.Set(found)
 			}
 
 		case drivers.HTTPCookie:
-			cookies = append(cookies, cookie)
-
+			cookies.Set(cookie)
 		default:
 			return values.None, core.TypeError(c.Type(), types.String, drivers.HTTPCookieType)
 		}
 	}
 
-	return values.None, page.DeleteCookies(ctx, cookies...)
+	return values.None, page.DeleteCookies(ctx, cookies)
 }

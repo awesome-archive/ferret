@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"hash/fnv"
 
 	"github.com/PuerkitoBio/goquery"
@@ -14,16 +15,16 @@ import (
 
 type HTMLPage struct {
 	document *HTMLDocument
-	cookies  drivers.HTTPCookies
+	cookies  *drivers.HTTPCookies
 	frames   *values.Array
-	response *drivers.HTTPResponse
+	response drivers.HTTPResponse
 }
 
 func NewHTMLPage(
 	qdoc *goquery.Document,
 	url string,
-	response *drivers.HTTPResponse,
-	cookies drivers.HTTPCookies,
+	response drivers.HTTPResponse,
+	cookies *drivers.HTTPCookies,
 ) (*HTMLPage, error) {
 	doc, err := NewRootHTMLDocument(qdoc, url)
 
@@ -84,10 +85,10 @@ func (p *HTMLPage) Hash() uint64 {
 }
 
 func (p *HTMLPage) Copy() core.Value {
-	cookies := make(drivers.HTTPCookies)
+	var cookies *drivers.HTTPCookies
 
-	for k, v := range p.cookies {
-		cookies[k] = v
+	if p.cookies != nil {
+		cookies = p.cookies.Copy().(*drivers.HTTPCookies)
 	}
 
 	page, err := NewHTMLPage(
@@ -108,12 +109,12 @@ func (p *HTMLPage) Iterate(ctx context.Context) (core.Iterator, error) {
 	return p.document.Iterate(ctx)
 }
 
-func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	return common.GetInPage(ctx, p, path)
+func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
+	return common.GetInPage(ctx, path, p)
 }
 
-func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	return common.SetInPage(ctx, p, path, value)
+func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) core.PathError {
+	return common.SetInPage(ctx, path, p, value)
 }
 
 func (p *HTMLPage) Length() values.Int {
@@ -168,29 +169,29 @@ func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, er
 	return p.frames.Get(idx), nil
 }
 
-func (p *HTMLPage) GetCookies(_ context.Context) (*values.Array, error) {
-	if p.cookies == nil {
-		return values.NewArray(0), nil
+func (p *HTMLPage) GetCookies(_ context.Context) (*drivers.HTTPCookies, error) {
+	res := drivers.NewHTTPCookies()
+
+	if p.cookies != nil {
+		p.cookies.ForEach(func(value drivers.HTTPCookie, _ values.String) bool {
+			res.Set(value)
+
+			return true
+		})
 	}
 
-	arr := values.NewArray(len(p.cookies))
-
-	for _, c := range p.cookies {
-		arr.Push(c)
-	}
-
-	return arr, nil
+	return res, nil
 }
 
-func (p *HTMLPage) GetResponse(_ context.Context) (*drivers.HTTPResponse, error) {
+func (p *HTMLPage) GetResponse(_ context.Context) (drivers.HTTPResponse, error) {
 	return p.response, nil
 }
 
-func (p *HTMLPage) SetCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
+func (p *HTMLPage) SetCookies(_ context.Context, _ *drivers.HTTPCookies) error {
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) DeleteCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
+func (p *HTMLPage) DeleteCookies(_ context.Context, _ *drivers.HTTPCookies) error {
 	return core.ErrNotSupported
 }
 
@@ -202,7 +203,11 @@ func (p *HTMLPage) CaptureScreenshot(_ context.Context, _ drivers.ScreenshotPara
 	return nil, core.ErrNotSupported
 }
 
-func (p *HTMLPage) WaitForNavigation(_ context.Context) error {
+func (p *HTMLPage) WaitForNavigation(_ context.Context, _ values.String) error {
+	return core.ErrNotSupported
+}
+
+func (p *HTMLPage) WaitForFrameNavigation(_ context.Context, _ drivers.HTMLDocument, _ values.String) error {
 	return core.ErrNotSupported
 }
 
@@ -216,4 +221,8 @@ func (p *HTMLPage) NavigateBack(_ context.Context, _ values.Int) (values.Boolean
 
 func (p *HTMLPage) NavigateForward(_ context.Context, _ values.Int) (values.Boolean, error) {
 	return false, core.ErrNotSupported
+}
+
+func (p *HTMLPage) Subscribe(_ context.Context, _ events.Subscription) (events.Stream, error) {
+	return nil, core.ErrNotSupported
 }

@@ -9,8 +9,8 @@ import (
 )
 
 // FOCUS Sets focus on the element.
-// @param target (HTMLPage | HTMLDocument | HTMLElement) - Target node.
-// @param selector (String, optional) - Optional CSS selector.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} [selector] - CSS selector.
 func Focus(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
@@ -25,8 +25,14 @@ func Focus(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) == 1 {
-		return values.None, el.Focus(ctx)
+		return values.True, el.Focus(ctx)
 	}
 
-	return values.None, el.FocusBySelector(ctx, values.ToString(args[1]))
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
+
+	return values.True, el.FocusBySelector(ctx, selector)
 }

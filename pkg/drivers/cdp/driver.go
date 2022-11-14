@@ -2,13 +2,15 @@ package cdp
 
 import (
 	"context"
+	"sync"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
+	"github.com/mafredri/cdp/protocol/browser"
 	"github.com/mafredri/cdp/protocol/target"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/mafredri/cdp/session"
 	"github.com/pkg/errors"
-	"sync"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -28,13 +30,13 @@ type Driver struct {
 	conn      *rpcc.Conn
 	client    *cdp.Client
 	session   *session.Manager
-	contextID target.BrowserContextID
+	contextID browser.ContextID
 	options   *Options
 }
 
 func NewDriver(opts ...Option) *Driver {
 	drv := new(Driver)
-	drv.options = newOptions(opts)
+	drv.options = NewOptions(opts)
 	drv.dev = devtool.New(drv.options.Address)
 
 	return drv
@@ -47,92 +49,42 @@ func (drv *Driver) Name() string {
 func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTMLPage, error) {
 	logger := logging.FromContext(ctx)
 
-	err := drv.init(ctx)
+	conn, err := drv.createConnection(ctx, params.KeepCookies)
 
 	if err != nil {
-		logger.
-			Error().
-			Timestamp().
+		logger.Error().
 			Err(err).
 			Str("driver", drv.options.Name).
-			Msg("failed to initialize the driver")
+			Msg("failed to create a new connection")
 
 		return nil, err
 	}
 
-	// Args for a new target belonging to the browser context
-	createTargetArgs := target.NewCreateTargetArgs(BlankPageURL)
+	return LoadHTMLPage(ctx, conn, drv.setDefaultParams(params))
+}
 
-	if !drv.options.KeepCookies && !params.KeepCookies {
-		// Set it to an incognito mode
-		createTargetArgs.SetBrowserContextID(drv.contextID)
-	}
+func (drv *Driver) Parse(ctx context.Context, params drivers.ParseParams) (drivers.HTMLPage, error) {
+	logger := logging.FromContext(ctx)
 
-	// New target
-	createTarget, err := drv.client.Target.CreateTarget(ctx, createTargetArgs)
+	conn, err := drv.createConnection(ctx, true)
 
 	if err != nil {
-		logger.
-			Error().
-			Timestamp().
+		logger.Error().
 			Err(err).
 			Str("driver", drv.options.Name).
-			Msg("failed to create a browser target")
+			Msg("failed to create a new connection")
 
 		return nil, err
 	}
 
-	// Connect to target using the existing websocket connection.
-	conn, err := drv.session.Dial(ctx, createTarget.TargetID)
-
-	if err != nil {
-		logger.
-			Error().
-			Timestamp().
-			Err(err).
-			Str("driver", drv.options.Name).
-			Msg("failed to establish a connection")
-
-		return nil, err
-	}
-
-	if params.UserAgent == "" {
-		params.UserAgent = drv.options.UserAgent
-	}
-
-	if params.Viewport == nil {
-		params.Viewport = defaultViewport
-	}
-
-	if drv.options.Headers != nil && params.Headers == nil {
-		params.Headers = make(drivers.HTTPHeaders)
-	}
-
-	// set default headers
-	for k, v := range drv.options.Headers {
-		_, exists := params.Headers[k]
-
-		// do not override user's set values
-		if !exists {
-			params.Headers[k] = v
-		}
-	}
-
-	if drv.options.Cookies != nil && params.Cookies == nil {
-		params.Cookies = make(drivers.HTTPCookies)
-	}
-
-	// set default cookies
-	for k, v := range drv.options.Cookies {
-		_, exists := params.Cookies[k]
-
-		// do not override user's set values
-		if !exists {
-			params.Cookies[k] = v
-		}
-	}
-
-	return LoadHTMLPage(ctx, conn, params)
+	return LoadHTMLPageWithContent(ctx, conn, drv.setDefaultParams(drivers.Params{
+		URL:         BlankPageURL,
+		UserAgent:   "",
+		KeepCookies: params.KeepCookies,
+		Cookies:     params.Cookies,
+		Headers:     params.Headers,
+		Viewport:    params.Viewport,
+	}), params.Content)
 }
 
 func (drv *Driver) Close() error {
@@ -148,6 +100,46 @@ func (drv *Driver) Close() error {
 	return nil
 }
 
+func (drv *Driver) createConnection(ctx context.Context, keepCookies bool) (*rpcc.Conn, error) {
+	err := drv.init(ctx)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "initialize driver")
+	}
+
+	// Args for a new target belonging to the browser context
+	createTargetArgs := target.NewCreateTargetArgs(BlankPageURL)
+
+	if !drv.options.KeepCookies && !keepCookies {
+		// Set it to an incognito mode
+		createTargetArgs.SetBrowserContextID(drv.contextID)
+	}
+
+	// New target
+	createTarget, err := drv.client.Target.CreateTarget(ctx, createTargetArgs)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "create a browser target")
+	}
+
+	// Connect to target using the existing websocket connection.
+	conn, err := drv.session.Dial(ctx, createTarget.TargetID)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "establish a new connection")
+	}
+
+	return conn, nil
+}
+
+func (drv *Driver) setDefaultParams(params drivers.Params) drivers.Params {
+	if params.Viewport == nil {
+		params.Viewport = defaultViewport
+	}
+
+	return drivers.SetDefaultParams(drv.options.Options, params)
+}
+
 func (drv *Driver) init(ctx context.Context) error {
 	drv.mu.Lock()
 	defer drv.mu.Unlock()
@@ -159,7 +151,23 @@ func (drv *Driver) init(ctx context.Context) error {
 			return errors.Wrap(err, "failed to initialize driver")
 		}
 
-		bconn, err := rpcc.DialContext(ctx, ver.WebSocketDebuggerURL)
+		dialOpts := make([]rpcc.DialOption, 0, 2)
+
+		if drv.options.Connection != nil {
+			if drv.options.Connection.BufferSize > 0 {
+				dialOpts = append(dialOpts, rpcc.WithWriteBufferSize(drv.options.Connection.BufferSize))
+			}
+
+			if drv.options.Connection.Compression {
+				dialOpts = append(dialOpts, rpcc.WithCompression())
+			}
+		}
+
+		bconn, err := rpcc.DialContext(
+			ctx,
+			ver.WebSocketDebuggerURL,
+			dialOpts...,
+		)
 
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize driver")
@@ -183,7 +191,7 @@ func (drv *Driver) init(ctx context.Context) error {
 			return nil
 		}
 
-		createCtx, err := bc.Target.CreateBrowserContext(ctx)
+		createCtx, err := bc.Target.CreateBrowserContext(ctx, &target.CreateBrowserContextArgs{})
 
 		if err != nil {
 			bconn.Close()

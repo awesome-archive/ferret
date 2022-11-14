@@ -14,6 +14,7 @@ func RegisterLib(ns core.Namespace) error {
 	return ns.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
 			"ATTR_GET":          AttributeGet,
+			"ATTR_QUERY":        AttributeQuery,
 			"ATTR_REMOVE":       AttributeRemove,
 			"ATTR_SET":          AttributeSet,
 			"BLUR":              Blur,
@@ -23,11 +24,13 @@ func RegisterLib(ns core.Namespace) error {
 			"CLICK":             Click,
 			"CLICK_ALL":         ClickAll,
 			"DOCUMENT":          Open,
+			"DOCUMENT_EXISTS":   DocumentExists,
 			"DOWNLOAD":          Download,
 			"ELEMENT":           Element,
 			"ELEMENT_EXISTS":    ElementExists,
 			"ELEMENTS":          Elements,
 			"ELEMENTS_COUNT":    ElementsCount,
+			"FRAMES":            Frames,
 			"FOCUS":             Focus,
 			"HOVER":             Hover,
 			"INNER_HTML":        GetInnerHTML,
@@ -43,7 +46,10 @@ func RegisterLib(ns core.Namespace) error {
 			"NAVIGATE_BACK":     NavigateBack,
 			"NAVIGATE_FORWARD":  NavigateForward,
 			"PAGINATION":        Pagination,
+			"PARSE":             Parse,
 			"PDF":               PDF,
+			"PRESS":             Press,
+			"PRESS_SELECTOR":    PressSelector,
 			"SCREENSHOT":        Screenshot,
 			"SCROLL":            ScrollXY,
 			"SCROLL_BOTTOM":     ScrollBottom,
@@ -69,6 +75,7 @@ func RegisterLib(ns core.Namespace) error {
 			"WAIT_NO_STYLE_ALL": WaitNoStyleAll,
 			"WAIT_NAVIGATION":   WaitNavigation,
 			"XPATH":             XPath,
+			"X":                 XPathSelector,
 		}))
 }
 
@@ -103,4 +110,36 @@ func waitTimeout(ctx context.Context, value values.Int) (context.Context, contex
 		ctx,
 		time.Duration(value)*time.Millisecond,
 	)
+}
+
+func toScrollOptions(value core.Value) (drivers.ScrollOptions, error) {
+	result := drivers.ScrollOptions{}
+
+	err := core.ValidateType(value, types.Object)
+
+	if err != nil {
+		return result, err
+	}
+
+	obj := value.(*values.Object)
+
+	behavior, exists := obj.Get("behavior")
+
+	if exists {
+		result.Behavior = drivers.NewScrollBehavior(behavior.String())
+	}
+
+	block, exists := obj.Get("block")
+
+	if exists {
+		result.Block = drivers.NewScrollVerticalAlignment(block.String())
+	}
+
+	inline, exists := obj.Get("inline")
+
+	if exists {
+		result.Inline = drivers.NewScrollHorizontalAlignment(inline.String())
+	}
+
+	return result, nil
 }

@@ -11,20 +11,20 @@ import (
 
 // WAIT_ATTR_ALL waits for an attribute to appear on all matched elements with a given value.
 // Stops the execution until the navigation ends or operation times out.
-// @param doc (HTMLDocument) - Parent document.
-// @param selector (String) - String of CSS selector.
-// @param class (String) - String of target CSS class.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - String of CSS selector.
+// @param {String} class - String of target CSS class.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitAttributeAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeAllWhen(ctx, args, drivers.WaitEventPresence)
 }
 
 // WAIT_NO_ATTR_ALL waits for an attribute to disappear on all matched elements by a given value.
 // Stops the execution until the navigation ends or operation times out.
-// @param doc (HTMLDocument) - Parent document.
-// @param selector (String) - String of CSS selector.
-// @param class (String) - String of target CSS class.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - String of CSS selector.
+// @param {String} class - String of target CSS class.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitNoAttributeAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeAllWhen(ctx, args, drivers.WaitEventAbsence)
 }
@@ -36,14 +36,13 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 		return values.None, err
 	}
 
-	doc, err := drivers.ToDocument(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
-	// selector
-	err = core.ValidateType(args[1], types.String)
+	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
 		return values.None, err
@@ -56,7 +55,6 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 		return values.None, err
 	}
 
-	selector := args[1].(values.String)
 	name := args[2].(values.String)
 	value := args[3]
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
@@ -74,5 +72,5 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, doc.WaitForAttributeBySelectorAll(ctx, selector, name, value, when)
+	return values.True, el.WaitForAttributeBySelectorAll(ctx, selector, name, value, when)
 }

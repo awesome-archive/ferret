@@ -1,30 +1,40 @@
 module github.com/MontFerret/ferret
 
-go 1.13
+go 1.17
 
 require (
-	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/PuerkitoBio/goquery v1.5.0
-	github.com/antchfx/htmlquery v1.1.0
-	github.com/antchfx/xpath v1.1.0
-	github.com/antlr/antlr4 v0.0.0-20191005235324-c81b4e69b6c3
-	github.com/chzyer/logex v1.1.10 // indirect
-	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
-	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
-	github.com/corpix/uarand v0.1.1
-	github.com/derekparker/trie v0.0.0-20190812220523-e66023ee76eb
+	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/antchfx/htmlquery v1.2.5
+	github.com/antchfx/xpath v1.2.1
+	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20211211185417-43fb4c2dbe28
+	github.com/corpix/uarand v0.2.0
 	github.com/gobwas/glob v0.2.3
-	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/gorilla/css v1.0.0
-	github.com/gorilla/websocket v1.4.1 // indirect
-	github.com/labstack/echo/v4 v4.1.11
-	github.com/mafredri/cdp v0.24.2
-	github.com/natefinch/lumberjack v2.0.0+incompatible
-	github.com/pkg/errors v0.8.1
-	github.com/rs/zerolog v1.15.0
-	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0
-	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337
-	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	github.com/jarcoal/httpmock v1.2.0
+	github.com/mafredri/cdp v0.33.0
+	github.com/pkg/errors v0.9.1
+	github.com/rs/zerolog v1.28.0
+	github.com/sethgrid/pester v1.1.0
+	github.com/smartystreets/goconvey v1.7.2
+	github.com/stretchr/testify v1.8.1
+	github.com/wI2L/jettison v0.7.4
+	golang.org/x/net v0.0.0-20211209124913-491a49abca63
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/text v0.4.0
+)
+
+require (
+	github.com/andybalholm/cascadia v1.3.1 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
+	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
+	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/jtolds/gls v4.20.0+incompatible // indirect
+	github.com/mattn/go-colorable v0.1.12 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/smartystreets/assertions v1.2.0 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

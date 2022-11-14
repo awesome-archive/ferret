@@ -4,11 +4,14 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
+	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
 	"github.com/MontFerret/ferret/pkg/stdlib/html"
 	"github.com/MontFerret/ferret/pkg/stdlib/io"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
+	"github.com/MontFerret/ferret/pkg/stdlib/path"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing"
 	"github.com/MontFerret/ferret/pkg/stdlib/types"
 	"github.com/MontFerret/ferret/pkg/stdlib/utils"
 )
@@ -30,6 +33,10 @@ func RegisterLib(ns core.Namespace) error {
 		return err
 	}
 
+	if err := datetime.RegisterLib(ns); err != nil {
+		return err
+	}
+
 	if err := arrays.RegisterLib(ns); err != nil {
 		return err
 	}
@@ -46,5 +53,13 @@ func RegisterLib(ns core.Namespace) error {
 		return err
 	}
 
-	return utils.RegisterLib(ns)
+	if err := path.RegisterLib(ns); err != nil {
+		return err
+	}
+
+	if err := utils.RegisterLib(ns); err != nil {
+		return err
+	}
+
+	return testing.RegisterLib(ns)
 }

@@ -11,20 +11,20 @@ import (
 
 // WAIT_CLASS_ALL waits for a class to appear on all matched elements.
 // Stops the execution until the navigation ends or operation times out.
-// @param doc (HTMLDocument) - Parent document.
-// @param selector (String) - String of CSS selector.
-// @param class (String) - String of target CSS class.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - String of CSS selector.
+// @param {String} class - String of target CSS class.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitClassAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitClassAllWhen(ctx, args, drivers.WaitEventPresence)
 }
 
 // WAIT_NO_CLASS_ALL waits for a class to disappear on all matched elements.
 // Stops the execution until the navigation ends or operation times out.
-// @param doc (HTMLDocument) - Parent document.
-// @param selector (String) - String of CSS selector.
-// @param class (String) - String of target CSS class.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - String of CSS selector.
+// @param {String} class - String of target CSS class.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitNoClassAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitClassAllWhen(ctx, args, drivers.WaitEventAbsence)
 }
@@ -36,14 +36,14 @@ func waitClassAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 		return values.None, err
 	}
 
-	doc, err := drivers.ToDocument(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
 	// selector
-	err = core.ValidateType(args[1], types.String)
+	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
 		return values.None, err
@@ -56,7 +56,6 @@ func waitClassAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 		return values.None, err
 	}
 
-	selector := args[1].(values.String)
 	class := args[2].(values.String)
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
@@ -73,5 +72,5 @@ func waitClassAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, doc.WaitForClassBySelectorAll(ctx, selector, class, when)
+	return values.True, el.WaitForClassBySelectorAll(ctx, selector, class, when)
 }

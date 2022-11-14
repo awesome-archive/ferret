@@ -2,9 +2,10 @@ package expressions_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/literals"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
@@ -40,8 +41,8 @@ func TestReturnExpression(t *testing.T) {
 
 		rootScope, fn := core.NewRootScope()
 		scope := rootScope.Fork()
-		scope.SetVariable("test", values.NewString("value"))
-		fn()
+		So(scope.SetVariable("test", values.NewString("value")), ShouldBeNil)
+		So(fn(), ShouldBeNil)
 
 		value, err := exp.Exec(context.Background(), scope)
 		So(err, ShouldBeNil)
@@ -64,7 +65,7 @@ func TestReturnExpression(t *testing.T) {
 
 		value, err := exp.Exec(context.Background(), scope)
 		So(err, ShouldNotBeNil)
-		So(err, ShouldHaveSameTypeAs, core.ErrNotFound)
+		So(err.(*core.SourceErrorDetail).BaseError, ShouldHaveSameTypeAs, core.ErrNotFound)
 		So(value, ShouldHaveSameTypeAs, values.None)
 	})
 

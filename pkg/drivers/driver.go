@@ -2,15 +2,16 @@ package drivers
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type (
 	ctxKey struct{}
 
 	ctxValue struct {
-		opts    *options
+		opts    *globalOptions
 		drivers map[string]Driver
 	}
 
@@ -18,24 +19,12 @@ type (
 		io.Closer
 		Name() string
 		Open(ctx context.Context, params Params) (HTMLPage, error)
+		Parse(ctx context.Context, params ParseParams) (HTMLPage, error)
 	}
 )
 
-func WithContext(ctx context.Context, drv Driver, opts ...Option) context.Context {
-	ctx, value := resolveValue(ctx)
-
-	value.drivers[drv.Name()] = drv
-
-	for _, opt := range opts {
-		opt(drv, value.opts)
-	}
-
-	// set first registered driver as a default one
-	if value.opts.defaultDriver == "" {
-		value.opts.defaultDriver = drv.Name()
-	}
-
-	return ctx
+func WithContext(ctx context.Context, drv Driver, opts ...GlobalOption) context.Context {
+	return withContext(ctx, drv, opts)
 }
 
 func FromContext(ctx context.Context, name string) (Driver, error) {
@@ -54,6 +43,23 @@ func FromContext(ctx context.Context, name string) (Driver, error) {
 	return drv, nil
 }
 
+func withContext(ctx context.Context, drv Driver, opts []GlobalOption) context.Context {
+	ctx, value := resolveValue(ctx)
+
+	value.drivers[drv.Name()] = drv
+
+	for _, opt := range opts {
+		opt(drv, value.opts)
+	}
+
+	// set first registered driver as a default one
+	if value.opts.defaultDriver == "" {
+		value.opts.defaultDriver = drv.Name()
+	}
+
+	return ctx
+}
+
 func resolveValue(ctx context.Context) (context.Context, *ctxValue) {
 	key := ctxKey{}
 	v := ctx.Value(key)
@@ -61,7 +67,7 @@ func resolveValue(ctx context.Context) (context.Context, *ctxValue) {
 
 	if !ok {
 		value = &ctxValue{
-			opts:    &options{},
+			opts:    &globalOptions{},
 			drivers: make(map[string]Driver),
 		}
 

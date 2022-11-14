@@ -10,9 +10,9 @@ import (
 )
 
 // CLICK dispatches click event on a given element
-// @param source (Open | GetElement) - Event source.
-// @param selectorOrCount (String | Int, optional) - Optional selector or count of clicks.
-// @param count (Int, optional) - Optional count of clicks.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String | Int} [cssSelectorOrClicks] - CSS selector or count of clicks.
+// @param {Int} [clicks=1] - Count of clicks.
 func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 3)
 
@@ -32,14 +32,19 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) == 2 {
-		err := core.ValidateType(args[1], types.String, types.Int)
+		err := core.ValidateType(args[1], types.String, types.Int, drivers.QuerySelectorType)
 
 		if err != nil {
 			return values.False, err
 		}
 
-		if args[1].Type() == types.String {
-			selector := values.ToString(args[1])
+		if args[1].Type() == types.String || args[1].Type() == drivers.QuerySelectorType {
+			selector, err := drivers.ToQuerySelector(args[1])
+
+			if err != nil {
+				return values.None, err
+			}
+
 			exists, err := el.ExistsBySelector(ctx, selector)
 
 			if err != nil {
@@ -56,12 +61,6 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.True, el.Click(ctx, values.ToInt(args[1]))
 	}
 
-	err = core.ValidateType(args[1], types.String)
-
-	if err != nil {
-		return values.False, err
-	}
-
 	err = core.ValidateType(args[2], types.Int)
 
 	if err != nil {
@@ -69,7 +68,12 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// CLICK(doc, selector)
-	selector := values.ToString(args[1])
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
+
 	exists, err := el.ExistsBySelector(ctx, selector)
 
 	if err != nil {

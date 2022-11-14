@@ -2,34 +2,48 @@ package http
 
 import (
 	stdhttp "net/http"
+	"time"
+
+	"github.com/gobwas/glob"
+	"github.com/sethgrid/pester"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/sethgrid/pester"
+)
+
+var (
+	DefaultConcurrency = 1
+	DefaultMaxRetries  = 5
+	DefaultTimeout     = time.Second * 30
 )
 
 type (
 	Option func(opts *Options)
 
+	compiledStatusCodeFilter struct {
+		URL  glob.Glob
+		Code int
+	}
+
 	Options struct {
-		Name             string
-		Backoff          pester.BackoffStrategy
-		MaxRetries       int
-		Concurrency      int
-		Proxy            string
-		UserAgent        string
-		Headers          drivers.HTTPHeaders
-		Cookies          drivers.HTTPCookies
-		AllowedHTTPCodes map[int]struct{}
+		*drivers.Options
+		Backoff         pester.BackoffStrategy
+		MaxRetries      int
+		Concurrency     int
+		HTTPCodesFilter []compiledStatusCodeFilter
+		HTTPTransport   *stdhttp.Transport
+		Timeout         time.Duration
 	}
 )
 
-func newOptions(setters []Option) *Options {
+func NewOptions(setters []Option) *Options {
 	opts := new(Options)
+	opts.Options = new(drivers.Options)
 	opts.Name = DriverName
 	opts.Backoff = pester.ExponentialBackoff
-	opts.Concurrency = 3
-	opts.MaxRetries = 5
-	opts.AllowedHTTPCodes = map[int]struct{}{stdhttp.StatusOK: struct{}{}}
+	opts.Concurrency = DefaultConcurrency
+	opts.MaxRetries = DefaultMaxRetries
+	opts.Timeout = DefaultTimeout
+	opts.HTTPCodesFilter = make([]compiledStatusCodeFilter, 0, 5)
 
 	for _, setter := range setters {
 		setter(opts)
@@ -70,76 +84,72 @@ func WithConcurrency(value int) Option {
 
 func WithProxy(address string) Option {
 	return func(opts *Options) {
-		opts.Proxy = address
+		drivers.WithProxy(address)(opts.Options)
 	}
 }
 
 func WithUserAgent(value string) Option {
 	return func(opts *Options) {
-		opts.UserAgent = value
+		drivers.WithUserAgent(value)(opts.Options)
 	}
 }
 
 func WithCustomName(name string) Option {
 	return func(opts *Options) {
-		opts.Name = name
+		drivers.WithCustomName(name)(opts.Options)
 	}
 }
 
 func WithHeader(name string, value []string) Option {
 	return func(opts *Options) {
-		if opts.Headers == nil {
-			opts.Headers = make(drivers.HTTPHeaders)
-		}
-
-		opts.Headers[name] = value
+		drivers.WithHeader(name, value)(opts.Options)
 	}
 }
 
-func WithHeaders(headers drivers.HTTPHeaders) Option {
+func WithHeaders(headers *drivers.HTTPHeaders) Option {
 	return func(opts *Options) {
-		if opts.Headers == nil {
-			opts.Headers = make(drivers.HTTPHeaders)
-		}
-
-		for k, v := range headers {
-			opts.Headers[k] = v
-		}
+		drivers.WithHeaders(headers)(opts.Options)
 	}
 }
 
 func WithCookie(cookie drivers.HTTPCookie) Option {
 	return func(opts *Options) {
-		if opts.Cookies == nil {
-			opts.Cookies = make(drivers.HTTPCookies)
-		}
-
-		opts.Cookies[cookie.Name] = cookie
+		drivers.WithCookie(cookie)(opts.Options)
 	}
 }
 
 func WithCookies(cookies []drivers.HTTPCookie) Option {
 	return func(opts *Options) {
-		if opts.Cookies == nil {
-			opts.Cookies = make(drivers.HTTPCookies)
-		}
-
-		for _, c := range cookies {
-			opts.Cookies[c.Name] = c
-		}
+		drivers.WithCookies(cookies)(opts.Options)
 	}
 }
 
 func WithAllowedHTTPCode(httpCode int) Option {
 	return func(opts *Options) {
-		opts.AllowedHTTPCodes[httpCode] = struct{}{}
+		opts.HTTPCodesFilter = append(opts.HTTPCodesFilter, compiledStatusCodeFilter{
+			Code: httpCode,
+		})
 	}
 }
 
 func WithAllowedHTTPCodes(httpCodes []int) Option {
 	return func(opts *Options) {
 		for _, code := range httpCodes {
-			opts.AllowedHTTPCodes[code] = struct{}{}
+			opts.HTTPCodesFilter = append(opts.HTTPCodesFilter, compiledStatusCodeFilter{
+				Code: code,
+			})
 		}
+	}
+}
+
+func WithCustomTransport(transport *stdhttp.Transport) Option {
+	return func(opts *Options) {
+		opts.HTTPTransport = transport
+	}
+}
+
+func WithTimeout(duration time.Duration) Option {
+	return func(opts *Options) {
+		opts.Timeout = duration
 	}
 }

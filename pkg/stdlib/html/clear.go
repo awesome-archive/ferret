@@ -9,8 +9,8 @@ import (
 )
 
 // INPUT_CLEAR clears a value from an underlying input element.
-// @param source (HTMLPage | HTMLDocument | HTMLElement) - Event target.
-// @param selector (String, options) - Selector.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} [selector] - CSS selector.
 func InputClear(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
@@ -29,5 +29,11 @@ func InputClear(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, el.Clear(ctx)
 	}
 
-	return values.None, el.ClearBySelector(ctx, values.ToString(args[1]))
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
+
+	return values.True, el.ClearBySelector(ctx, selector)
 }

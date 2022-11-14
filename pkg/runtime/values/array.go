@@ -3,9 +3,10 @@ package values
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"hash/fnv"
 	"sort"
+
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -21,6 +22,10 @@ type (
 	}
 )
 
+func EmptyArray() *Array {
+	return &Array{items: make([]core.Value, 0, 0)}
+}
+
 func NewArray(size int) *Array {
 	return &Array{items: make([]core.Value, 0, size)}
 }
@@ -29,8 +34,12 @@ func NewArrayWith(values ...core.Value) *Array {
 	return &Array{items: values}
 }
 
+func NewArrayOf(values []core.Value) *Array {
+	return &Array{items: values}
+}
+
 func (t *Array) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.items)
+	return jettison.MarshalOpts(t.items, jettison.NoHTMLEscaping())
 }
 
 func (t *Array) Type() core.Type {
@@ -136,7 +145,39 @@ func (t *Array) ForEach(predicate ArrayPredicate) {
 	}
 }
 
-func (t *Array) Find(predicate ArrayPredicate) (core.Value, Boolean) {
+func (t *Array) First() core.Value {
+	if len(t.items) > 0 {
+		return t.items[0]
+	}
+
+	return None
+}
+
+func (t *Array) Last() core.Value {
+	size := len(t.items)
+
+	if size > 1 {
+		return t.items[size-1]
+	} else if size == 1 {
+		return t.items[0]
+	}
+
+	return None
+}
+
+func (t *Array) Find(predicate ArrayPredicate) (*Array, Boolean) {
+	result := NewArray(len(t.items))
+
+	for idx, val := range t.items {
+		if predicate(val, idx) {
+			result.Push(val)
+		}
+	}
+
+	return result, result.Length() > 0
+}
+
+func (t *Array) FindOne(predicate ArrayPredicate) (core.Value, Boolean) {
 	for idx, val := range t.items {
 		if predicate(val, idx) {
 			return val, True
@@ -260,28 +301,34 @@ func (t *Array) SortWith(sorter ArraySorter) *Array {
 	return res
 }
 
-func (t *Array) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (t *Array) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return None, nil
 	}
 
-	if typ := path[0].Type(); typ != types.Int {
-		return None, core.TypeError(typ, types.Int)
+	segmentIdx := 0
+
+	if typ := path[segmentIdx].Type(); typ != types.Int {
+		return None, core.NewPathError(core.TypeError(typ, types.Int), segmentIdx)
 	}
 
-	first := t.Get(path[0].(Int))
+	first := t.Get(path[segmentIdx].(Int))
 
 	if len(path) == 1 {
 		return first, nil
 	}
 
-	getter, ok := first.(core.Getter)
-	if !ok {
-		return None, core.TypeError(
-			first.Type(),
-			core.NewType("Getter"),
-		)
+	segmentIdx++
+
+	if first == None || first == nil {
+		return None, core.NewPathError(core.ErrInvalidPath, segmentIdx)
 	}
 
-	return getter.GetIn(ctx, path[1:])
+	getter, ok := first.(core.Getter)
+
+	if !ok {
+		return GetIn(ctx, first, path[segmentIdx:])
+	}
+
+	return getter.GetIn(ctx, path[segmentIdx:])
 }

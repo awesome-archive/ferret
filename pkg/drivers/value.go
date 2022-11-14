@@ -2,6 +2,7 @@ package drivers
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
@@ -13,7 +14,7 @@ type (
 	// WaitEvent is an enum that represents what event is needed to wait for
 	WaitEvent int
 
-	// Node is an interface from which a number of DOM API object types inherit.
+	// HTMLNode is an interface from which a number of DOM API object types inherit.
 	// It allows those types to be treated similarly;
 	// for example, inheriting the same set of methods, or being tested in the same way.
 	HTMLNode interface {
@@ -24,23 +25,21 @@ type (
 		collections.Measurable
 		io.Closer
 
-		IsDetached() values.Boolean
+		GetNodeType(ctx context.Context) (values.Int, error)
 
-		GetNodeType() values.Int
-
-		GetNodeName() values.String
+		GetNodeName(ctx context.Context) (values.String, error)
 
 		GetChildNodes(ctx context.Context) (*values.Array, error)
 
 		GetChildNode(ctx context.Context, idx values.Int) (core.Value, error)
 
-		QuerySelector(ctx context.Context, selector values.String) (core.Value, error)
+		QuerySelector(ctx context.Context, selector QuerySelector) (core.Value, error)
 
-		QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
+		QuerySelectorAll(ctx context.Context, selector QuerySelector) (*values.Array, error)
 
-		CountBySelector(ctx context.Context, selector values.String) (values.Int, error)
+		CountBySelector(ctx context.Context, selector QuerySelector) (values.Int, error)
 
-		ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error)
+		ExistsBySelector(ctx context.Context, selector QuerySelector) (values.Boolean, error)
 
 		XPath(ctx context.Context, expression values.String) (core.Value, error)
 	}
@@ -67,7 +66,7 @@ type (
 
 		SetStyles(ctx context.Context, values *values.Object) error
 
-		SetStyle(ctx context.Context, name values.String, value core.Value) error
+		SetStyle(ctx context.Context, name, value values.String) error
 
 		RemoveStyle(ctx context.Context, name ...values.String) error
 
@@ -81,55 +80,81 @@ type (
 
 		RemoveAttribute(ctx context.Context, name ...values.String) error
 
-		GetInnerHTMLBySelector(ctx context.Context, selector values.String) (values.String, error)
+		GetInnerHTMLBySelector(ctx context.Context, selector QuerySelector) (values.String, error)
 
-		SetInnerHTMLBySelector(ctx context.Context, selector, innerHTML values.String) error
+		SetInnerHTMLBySelector(ctx context.Context, selector QuerySelector, innerHTML values.String) error
 
-		GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
+		GetInnerHTMLBySelectorAll(ctx context.Context, selector QuerySelector) (*values.Array, error)
 
-		GetInnerTextBySelector(ctx context.Context, selector values.String) (values.String, error)
+		GetInnerTextBySelector(ctx context.Context, selector QuerySelector) (values.String, error)
 
-		SetInnerTextBySelector(ctx context.Context, selector, innerText values.String) error
+		SetInnerTextBySelector(ctx context.Context, selector QuerySelector, innerText values.String) error
 
-		GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
+		GetInnerTextBySelectorAll(ctx context.Context, selector QuerySelector) (*values.Array, error)
+
+		GetPreviousElementSibling(ctx context.Context) (core.Value, error)
+
+		GetNextElementSibling(ctx context.Context) (core.Value, error)
+
+		GetParentElement(ctx context.Context) (core.Value, error)
 
 		Click(ctx context.Context, count values.Int) error
 
-		ClickBySelector(ctx context.Context, selector values.String, count values.Int) error
+		ClickBySelector(ctx context.Context, selector QuerySelector, count values.Int) error
 
-		ClickBySelectorAll(ctx context.Context, selector values.String, count values.Int) error
+		ClickBySelectorAll(ctx context.Context, selector QuerySelector, count values.Int) error
 
 		Clear(ctx context.Context) error
 
-		ClearBySelector(ctx context.Context, selector values.String) error
+		ClearBySelector(ctx context.Context, selector QuerySelector) error
 
 		Input(ctx context.Context, value core.Value, delay values.Int) error
 
-		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error
+		InputBySelector(ctx context.Context, selector QuerySelector, value core.Value, delay values.Int) error
+
+		Press(ctx context.Context, keys []values.String, count values.Int) error
+
+		PressBySelector(ctx context.Context, selector QuerySelector, keys []values.String, count values.Int) error
 
 		Select(ctx context.Context, value *values.Array) (*values.Array, error)
 
-		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
+		SelectBySelector(ctx context.Context, selector QuerySelector, value *values.Array) (*values.Array, error)
 
-		ScrollIntoView(ctx context.Context) error
+		ScrollIntoView(ctx context.Context, options ScrollOptions) error
 
 		Focus(ctx context.Context) error
 
-		FocusBySelector(ctx context.Context, selector values.String) error
+		FocusBySelector(ctx context.Context, selector QuerySelector) error
 
 		Blur(ctx context.Context) error
 
-		BlurBySelector(ctx context.Context, selector values.String) error
+		BlurBySelector(ctx context.Context, selector QuerySelector) error
 
 		Hover(ctx context.Context) error
 
-		HoverBySelector(ctx context.Context, selector values.String) error
+		HoverBySelector(ctx context.Context, selector QuerySelector) error
+
+		WaitForElement(ctx context.Context, selector QuerySelector, when WaitEvent) error
+
+		WaitForElementAll(ctx context.Context, selector QuerySelector, when WaitEvent) error
 
 		WaitForAttribute(ctx context.Context, name values.String, value core.Value, when WaitEvent) error
 
+		WaitForAttributeBySelector(ctx context.Context, selector QuerySelector, name values.String, value core.Value, when WaitEvent) error
+
+		WaitForAttributeBySelectorAll(ctx context.Context, selector QuerySelector, name values.String, value core.Value, when WaitEvent) error
+
 		WaitForStyle(ctx context.Context, name values.String, value core.Value, when WaitEvent) error
 
+		WaitForStyleBySelector(ctx context.Context, selector QuerySelector, name values.String, value core.Value, when WaitEvent) error
+
+		WaitForStyleBySelectorAll(ctx context.Context, selector QuerySelector, name values.String, value core.Value, when WaitEvent) error
+
 		WaitForClass(ctx context.Context, class values.String, when WaitEvent) error
+
+		WaitForClassBySelector(ctx context.Context, selector QuerySelector, class values.String, when WaitEvent) error
+
+		WaitForClassBySelectorAll(ctx context.Context, selector QuerySelector, class values.String, when WaitEvent) error
 	}
 
 	HTMLDocument interface {
@@ -143,33 +168,19 @@ type (
 
 		GetName() values.String
 
-		GetParentDocument() HTMLDocument
+		GetParentDocument(ctx context.Context) (HTMLDocument, error)
 
 		GetChildDocuments(ctx context.Context) (*values.Array, error)
 
-		ScrollTop(ctx context.Context) error
+		Scroll(ctx context.Context, options ScrollOptions) error
 
-		ScrollBottom(ctx context.Context) error
+		ScrollTop(ctx context.Context, options ScrollOptions) error
 
-		ScrollBySelector(ctx context.Context, selector values.String) error
+		ScrollBottom(ctx context.Context, options ScrollOptions) error
 
-		ScrollByXY(ctx context.Context, x, y values.Float) error
+		ScrollBySelector(ctx context.Context, selector QuerySelector, options ScrollOptions) error
 
 		MoveMouseByXY(ctx context.Context, x, y values.Float) error
-
-		WaitForElement(ctx context.Context, selector values.String, when WaitEvent) error
-
-		WaitForAttributeBySelector(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
-
-		WaitForAttributeBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
-
-		WaitForStyleBySelector(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
-
-		WaitForStyleBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
-
-		WaitForClassBySelector(ctx context.Context, selector, class values.String, when WaitEvent) error
-
-		WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when WaitEvent) error
 	}
 
 	// HTMLPage interface represents any web page loaded in the browser
@@ -180,6 +191,7 @@ type (
 		core.Getter
 		core.Setter
 		collections.Measurable
+		events.Observable
 		io.Closer
 
 		IsClosed() values.Boolean
@@ -192,32 +204,34 @@ type (
 
 		GetFrame(ctx context.Context, idx values.Int) (core.Value, error)
 
-		GetCookies(ctx context.Context) (*values.Array, error)
+		GetCookies(ctx context.Context) (*HTTPCookies, error)
 
-		SetCookies(ctx context.Context, cookies ...HTTPCookie) error
+		SetCookies(ctx context.Context, cookies *HTTPCookies) error
 
-		DeleteCookies(ctx context.Context, cookies ...HTTPCookie) error
+		DeleteCookies(ctx context.Context, cookies *HTTPCookies) error
+
+		GetResponse(ctx context.Context) (HTTPResponse, error)
 
 		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
 
 		CaptureScreenshot(ctx context.Context, params ScreenshotParams) (values.Binary, error)
 
-		WaitForNavigation(ctx context.Context) error
+		WaitForNavigation(ctx context.Context, targetURL values.String) error
+
+		WaitForFrameNavigation(ctx context.Context, frame HTMLDocument, targetURL values.String) error
 
 		Navigate(ctx context.Context, url values.String) error
 
 		NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error)
 
 		NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error)
-
-		GetResponse(ctx context.Context) (*HTTPResponse, error)
 	}
 )
 
 const (
-	// Event indicating to wait for value to appear
+	// WaitEventPresence indicating to wait for value to appear
 	WaitEventPresence = 0
 
-	// Event indicating to wait for value to disappear
+	// WaitEventAbsence indicating to wait for value to disappear
 	WaitEventAbsence = 1
 )

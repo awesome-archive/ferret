@@ -4,11 +4,12 @@ import (
 	"context"
 	"hash/fnv"
 
+	"github.com/PuerkitoBio/goquery"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/PuerkitoBio/goquery"
 )
 
 type HTMLDocument struct {
@@ -133,20 +134,20 @@ func (doc *HTMLDocument) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(doc.element)
 }
 
-func (doc *HTMLDocument) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	return common.GetInDocument(ctx, doc, path)
+func (doc *HTMLDocument) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
+	return common.GetInDocument(ctx, path, doc)
 }
 
-func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	return common.SetInDocument(ctx, doc, path, value)
+func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value core.Value) core.PathError {
+	return common.SetInDocument(ctx, path, doc, value)
 }
 
-func (doc *HTMLDocument) GetNodeType() values.Int {
-	return 9
+func (doc *HTMLDocument) GetNodeType(_ context.Context) (values.Int, error) {
+	return 9, nil
 }
 
-func (doc *HTMLDocument) GetNodeName() values.String {
-	return "#document"
+func (doc *HTMLDocument) GetNodeName(_ context.Context) (values.String, error) {
+	return "#document", nil
 }
 
 func (doc *HTMLDocument) GetChildNodes(ctx context.Context) (*values.Array, error) {
@@ -157,28 +158,24 @@ func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) (core
 	return doc.element.GetChildNode(ctx, idx)
 }
 
-func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
+func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector drivers.QuerySelector) (core.Value, error) {
 	return doc.element.QuerySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
+func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector drivers.QuerySelector) (*values.Array, error) {
 	return doc.element.QuerySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.String) (values.Int, error) {
+func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Int, error) {
 	return doc.element.CountBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
+func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Boolean, error) {
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
 func (doc *HTMLDocument) XPath(ctx context.Context, expression values.String) (core.Value, error) {
 	return doc.element.XPath(ctx, expression)
-}
-
-func (doc *HTMLDocument) IsDetached() values.Boolean {
-	return values.False
 }
 
 func (doc *HTMLDocument) GetTitle() values.String {
@@ -203,55 +200,27 @@ func (doc *HTMLDocument) GetName() values.String {
 	return ""
 }
 
-func (doc *HTMLDocument) GetParentDocument() drivers.HTMLDocument {
-	return doc.parent
+func (doc *HTMLDocument) GetParentDocument(_ context.Context) (drivers.HTMLDocument, error) {
+	return doc.parent, nil
 }
 
-func (doc *HTMLDocument) ScrollTop(_ context.Context) error {
+func (doc *HTMLDocument) ScrollTop(_ context.Context, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollBottom(_ context.Context) error {
+func (doc *HTMLDocument) ScrollBottom(_ context.Context, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollBySelector(_ context.Context, _ values.String) error {
+func (doc *HTMLDocument) ScrollBySelector(_ context.Context, _ drivers.QuerySelector, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollByXY(_ context.Context, _, _ values.Float) error {
+func (doc *HTMLDocument) Scroll(_ context.Context, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 
 func (doc *HTMLDocument) MoveMouseByXY(_ context.Context, _, _ values.Float) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForElement(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForClassBySelector(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForClassBySelectorAll(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForAttributeBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForAttributeBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForStyleBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForStyleBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 

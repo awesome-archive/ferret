@@ -9,8 +9,8 @@ import (
 )
 
 // BLUR Calls blur on the element.
-// @param target (HTMLPage | HTMLDocument | HTMLElement) - Target node.
-// @param selector (String, optional) - Optional CSS selector.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target node.
+// @param {String} [selector] - CSS selector.
 func Blur(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
@@ -28,5 +28,11 @@ func Blur(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, el.Blur(ctx)
 	}
 
-	return values.None, el.BlurBySelector(ctx, values.ToString(args[1]))
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
+
+	return values.None, el.BlurBySelector(ctx, selector)
 }

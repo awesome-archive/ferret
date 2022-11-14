@@ -12,10 +12,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Fmt formats the template using these arguments.
-// @params template (String) - template.
-// @params args (Any Values) - template arguments.
-// @returns (String) - string formed by template using arguments.
+// FMT formats the template using these arguments.
+// @param {String} template - template.
+// @param {Any, repeated} args - template arguments.
+// @return {String} - string formed by template using arguments.
 func Fmt(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 	if err != nil {
@@ -61,7 +61,7 @@ func format(template string, args []core.Value) (string, error) {
 
 		if betweenBrackets == "" {
 			if argsCount <= lastArgIdx {
-				err = errors.Errorf("not enought arguments")
+				err = errors.Errorf("not enough arguments")
 				return ""
 			}
 

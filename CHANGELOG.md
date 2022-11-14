@@ -1,5 +1,205 @@
 ## Changelog
 
+### 0.16.6
+
+### Fixed
+- Invalid XPath evaluation in HTTP driver [#725](https://github.com/MontFerret/ferret/pull/725)
+- Go routines leakage [#726](https://github.com/MontFerret/ferret/pull/726)
+
+### Updated
+- Small tweak in FQL Parser for FQL Formatter [#723](https://github.com/MontFerret/ferret/pull/723)
+
+### 0.16.5
+
+### Fixed
+- Query fails if an element is not found (regression) [#722](https://github.com/MontFerret/ferret/pull/722)
+
+### Updated
+- Small tweak in FQL Parser for FQL Formatter [#723](https://github.com/MontFerret/ferret/pull/723)
+
+### 0.16.4
+
+### Fixed
+- Fixed inability to parse custom date formats with DATE function [#720](https://github.com/MontFerret/ferret/pull/720)
+
+### 0.16.3
+
+### Fixed
+- Panic during XPath execution by HTTP driver [#715](https://github.com/MontFerret/ferret/pull/715)
+
+### 0.16.2
+
+### Fixed
+- Unable to use dynamic values in LIMIT clause [#706](https://github.com/MontFerret/ferret/pull/706)
+- HTTP driver does not allow to override header values [#707](https://github.com/MontFerret/ferret/pull/707), [#709](https://github.com/MontFerret/ferret/pull/709)
+- Cleaned up deps [#710](https://github.com/MontFerret/ferret/pull/710), [#711](https://github.com/MontFerret/ferret/pull/711)
+
+### 0.16.1
+
+### Fixed
+- Logical precedence in ternary operator condition [#704](https://github.com/MontFerret/ferret/pull/704)
+
+### 0.16.0
+
+### Added
+- New ``WAITFOR EVENT`` syntax [#590](https://github.com/MontFerret/ferret/pull/590)
+- Support of optional chaining [#634](https://github.com/MontFerret/ferret/pull/634)
+- Tracing to CDP driver [#648](https://github.com/MontFerret/ferret/pull/648)
+- Support of errors suppression in function calls [#652](https://github.com/MontFerret/ferret/pull/652)
+- Support of error suppression in inline expressions [#671](https://github.com/MontFerret/ferret/pull/671)
+- Support of XPath selectors throughout drivers API [#657](https://github.com/MontFerret/ferret/pull/657)
+- Zero-allocation in ``FOR`` loops returning ``NONE`` [#673](https://github.com/MontFerret/ferret/pull/673)
+- Ignorable ``_`` variable [#673](https://github.com/MontFerret/ferret/pull/673)
+
+### Changed
+- Updated Root API [#622](https://github.com/MontFerret/ferret/pull/622)
+- Increased websocket maximum buffer size in CDP driver [#648](https://github.com/MontFerret/ferret/pull/648)
+
+### Fixed
+- ``values.Parse`` does not parse int64 [#621](https://github.com/MontFerret/ferret/pull/621)
+- CPU leakage [#635](https://github.com/MontFerret/ferret/pull/635), [90792bc](https://github.com/MontFerret/ferret/pull/648/commits/90792bcf3cd0b95075988aafe5d1c5072f2985bc)
+- Nil pointer exception [#636](https://github.com/MontFerret/ferret/pull/636)
+- Use of deprecated CDP API methods [#637](https://github.com/MontFerret/ferret/pull/637)
+- HTTP driver makes multiple requests [#642](https://github.com/MontFerret/ferret/pull/642)
+- Log level is ignored [aeb1247](https://github.com/MontFerret/ferret/commit/aeb1247ab34c3107b66ef76cfedde0c747904889)
+
+#### Dependencies 
+- Upgraded github.com/mafredri/cdp
+- Upgraded github.com/antchfx/xpath
+- Upgraded github.com/PuerkitoBio/goquery
+- Upgraded github.com/rs/zerolog
+
+#### Other
+- Dropped support of Go 1.13 [0cb7623](https://github.com/MontFerret/ferret/commit/0cb7623a7fca00cc044ba3b62822b78557d96f2f)
+- New Eval API in CDP driver [#651](https://github.com/MontFerret/ferret/pull/651), [#658](https://github.com/MontFerret/ferret/pull/658)
+
+### 0.15.0
+#### Added
+- Support of document charset in HTTP driver [#609](https://github.com/MontFerret/ferret/pull/609)
+- ``Walk`` method to FQL Parser [80c278e](https://github.com/MontFerret/ferret/commit/80c278ec6c783e29a8df12865da8208d1c148c65)
+- Possibility to send keyboard events like 'Enter' or 'Shift' [#618](https://github.com/MontFerret/ferret/pull/618)
+
+#### Changed
+- Moved CLI to a separate repository [#608](https://github.com/MontFerret/ferret/pull/608)
+
+#### Fixed
+- Passing headers and cookies to HTTP driver [#614](https://github.com/MontFerret/ferret/pull/614)
+- Reading property of anyonymous object [#616](https://github.com/MontFerret/ferret/pull/616)
+- Clearing input text containing special characteers [#619](https://github.com/MontFerret/ferret/pull/619)
+
+### 0.14.1
+#### Fixed
+- Parsing HTTP headers and cookies [#598](https://github.com/MontFerret/ferret/pull/598)
+- Parsing cookie expiration datetime [#602](https://github.com/MontFerret/ferret/pull/602)
+
+### 0.14.0
+#### Added
+- Support of History API [#584](https://github.com/MontFerret/ferret/pull/584)
+- Support of custom http transport in HTTP driver [#586](https://github.com/MontFerret/ferret/pull/586)
+- ``LIKE`` operator [#591](https://github.com/MontFerret/ferret/pull/591)
+- Support of ignoring page resources [#592](https://github.com/MontFerret/ferret/pull/592)
+- Support of handling non-200 status codes in HTTP driver [#593](https://github.com/MontFerret/ferret/pull/593)
+- ``DOCUMENT_EXISTS`` function [#594](https://github.com/MontFerret/ferret/pull/594)
+
+#### Fixed
+- ``RAND(0,100)`` always same result [#579](https://github.com/MontFerret/ferret/pull/579)
+- Element.children always returns empty array [#580](https://github.com/MontFerret/ferret/pull/580)
+- Passing parameters with a nested nil structure leads to panic [#587](https://github.com/MontFerret/ferret/pull/587)
+
+### 0.13.0
+#### Added
+- ``WHILE`` loop and ``ATTR_QUERY`` function [#567](https://github.com/MontFerret/ferret/pull/567)
+- Support of Element.nextElementSibling and Element.previousElement [#569](https://github.com/MontFerret/ferret/pull/569)
+- Support of Element.getParentElement [#571](https://github.com/MontFerret/ferret/pull/571)
+- Support of computed styles [#570](https://github.com/MontFerret/ferret/pull/570)
+
+#### Fixed
+- HTML escaping [#573](https://github.com/MontFerret/ferret/pull/573)
+
+#### Updated 
+- Upgraded CDP client [#536](https://github.com/MontFerret/ferret/pull/563)
+- Upgraded GoQuery [#562](https://github.com/MontFerret/ferret/pull/562)
+- Upgraded XPath [#572](https://github.com/MontFerret/ferret/pull/572)
+
+### 0.12.1
+#### Fixed
+- Missing regexp FILTER operator [#558](https://github.com/MontFerret/ferret/pull/558)
+- Open tabs on page load error [#564](https://github.com/MontFerret/ferret/pull/564)
+- Docs for WAIT_NAVIGATION [#557](https://github.com/MontFerret/ferret/pull/557)
+
+### 0.12.0
+#### Added
+- iFrame navigation handling [#535](https://github.com/MontFerret/ferret/pull/535)
+- ``FRAMES`` function for fast frame lookup [#535](https://github.com/MontFerret/ferret/pull/535)
+- Assertion library [#526](https://github.com/MontFerret/ferret/pull/526)
+
+#### Changed
+- Removed property caching and tracking [#531](https://github.com/MontFerret/ferret/pull/531)
+- Updated dependencies [#528](https://github.com/MontFerret/ferret/pull/528), [#525](https://github.com/MontFerret/ferret/pull/525)
+- ``IO::FS::WRITE`` accepts any type as a file content [#544](https://github.com/MontFerret/ferret/pull/544)
+- Print errors on stderr [#539](https://github.com/MontFerret/ferret/pull/539)
+
+#### Fixed
+- ``WAIT`` does not respect cancellation signal [#524](https://github.com/MontFerret/ferret/pull/524)
+- Missed ``DATE_COMPARE`` [#537](https://github.com/MontFerret/ferret/pull/537)
+- Spelling [#534](https://github.com/MontFerret/ferret/pull/534)
+- ``SCREENSHOT`` param type check [#545](https://github.com/MontFerret/ferret/pull/545)
+- Wrong base for int formatter [e283722](https://github.com/MontFerret/ferret/commit/e283722d37f392f755ace2a42232c0d4b37d1838)
+
+### 0.11.1
+#### Fixed
+- Fixed use of unquoted scroll options [#521](https://github.com/MontFerret/ferret/pull/521)
+- Upgraded ANTLR version [#517](https://github.com/MontFerret/ferret/pull/517)
+
+
+### 0.11.0
+#### Added
+- USE statement. [#470](https://github.com/MontFerret/ferret/pull/470)
+- Scroll options. [#471](https://github.com/MontFerret/ferret/pull/471)
+- Functions for working with file paths. [#505](https://github.com/MontFerret/ferret/pull/505)
+- Fuzzer. [#501](https://github.com/MontFerret/ferret/pull/501)
+
+## Updated
+- ``DECODED_URI_COMPONENT`` decodes unicode symbols now. [#499](https://github.com/MontFerret/ferret/pull/499) 
+- Dependencies. [87265cf](https://github.com/MontFerret/ferret/commit/87265cf470c4b614d144706020729dd453620a0c)
+
+# Fixed
+- ``RAND`` always returns same result . [#484](https://github.com/MontFerret/ferret/pull/484)
+- ``RAND`` does not work on Windows. [#497](https://github.com/MontFerret/ferret/pull/497)
+- ``IO::FS::WRITE`` does not add read permissions. [#494](https://github.com/MontFerret/ferret/pull/494)
+- Unable to use keywords in namespaces. [#481](https://github.com/MontFerret/ferret/pull/481)
+
+### 0.10.2
+#### Updated
+- Updated dependencies. [#466](https://github.com/MontFerret/ferret/pull/466) [#467](https://github.com/MontFerret/ferret/pull/467)
+
+### 0.10.1
+#### Fixed
+- Added string functions with correct names. [#461](https://github.com/MontFerret/ferret/pull/461)
+- Added missed datetime library. [#462](https://github.com/MontFerret/ferret/pull/462)
+
+### 0.10.0
+#### Added
+- Response information to drivers. [#391](https://github.com/MontFerret/ferret/pull/391), [#450](https://github.com/MontFerret/ferret/pull/450)
+- Compilation check whether parameter values are provided. [#396](https://github.com/MontFerret/ferret/pull/396)
+- Allowed HTTP response codes to HTTP driver. [#398](https://github.com/MontFerret/ferret/pull/398)
+- IO functions to standard library. [#403](https://github.com/MontFerret/ferret/pull/403), [#405](https://github.com/MontFerret/ferret/pull/405), [#452](https://github.com/MontFerret/ferret/pull/452)
+- Compilation check whether a variable name is unique. [#416](https://github.com/MontFerret/ferret/pull/416)
+- Loading HTML page into memory. Supported by all drivers. [#413](https://github.com/MontFerret/ferret/pull/434)
+
+#### Fixed
+- Fixes in HTTP driver. [#390](https://github.com/MontFerret/ferret/pull/390)
+- Inability to handle redirects correctly. [#432](https://github.com/MontFerret/ferret/pull/432)
+- XPath selector gives faulty output. [#435](https://github.com/MontFerret/ferret/pull/435)
+- Typos in README and comments. [#446](https://github.com/MontFerret/ferret/pull/446)
+- ``PAGINATION`` fails during redirects. [#448](https://github.com/MontFerret/ferret/pull/448)
+
+#### Changed
+- Made FQL keywords case insensitive. [#393](https://github.com/MontFerret/ferret/pull/393)
+- Performance boost in EventBroker. [#402](https://github.com/MontFerret/ferret/pull/402), [#407](https://github.com/MontFerret/ferret/pull/407), [#408](https://github.com/MontFerret/ferret/pull/408)
+- Updated dependencies.
+
+
 ### 0.9.0
 #### Added
 - ``INPUT_CLEAR`` function to clear input's value. [#366](https://github.com/MontFerret/ferret/pull/366)

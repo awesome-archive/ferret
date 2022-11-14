@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -257,7 +258,10 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		So(el.GetNodeType(), ShouldEqual, 1)
+		nt, err := el.GetNodeType(context.Background())
+
+		So(err, ShouldBeNil)
+		So(nt, ShouldEqual, 1)
 	})
 
 	Convey(".GetNodeName", t, func() {
@@ -273,7 +277,10 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		So(el.GetNodeName(), ShouldEqual, "body")
+		nn, err := el.GetNodeName(context.Background())
+
+		So(err, ShouldBeNil)
+		So(nn, ShouldEqual, "body")
 	})
 
 	Convey(".Length", t, func() {
@@ -394,15 +401,14 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		found, err := el.QuerySelector(context.Background(), values.NewString("body .card-img-top:nth-child(1)"))
+		found, err := el.QuerySelector(context.Background(), drivers.NewCSSSelector("body .card-img-top:nth-child(1)"))
 
 		So(err, ShouldBeNil)
 		So(found, ShouldNotEqual, values.None)
 
-		v := found.(drivers.HTMLNode).GetNodeName()
+		v, err := found.(drivers.HTMLNode).GetNodeName(context.Background())
 
 		So(err, ShouldBeNil)
-
 		So(v, ShouldEqual, "img")
 	})
 
@@ -417,9 +423,80 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v, err := el.CountBySelector(context.Background(), values.NewString("head meta"))
+		v, err := el.CountBySelector(context.Background(), drivers.NewCSSSelector("head meta"))
 
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 4)
+	})
+
+	Convey(".XPath", t, func() {
+		Convey("Text nodes", func() {
+			buff := bytes.NewBuffer([]byte(doc))
+
+			buff.Write([]byte(doc))
+
+			doc, err := goquery.NewDocumentFromReader(buff)
+
+			So(err, ShouldBeNil)
+
+			el, err := http.NewHTMLElement(doc.Find("html"))
+
+			So(err, ShouldBeNil)
+
+			nt, err := el.XPath(context.Background(), values.NewString("/head/title/text()"))
+
+			So(err, ShouldBeNil)
+			So(nt.String(), ShouldEqual, "[\"Album example for Bootstrap\"]")
+		})
+
+		Convey("Func", func() {
+			buff := bytes.NewBuffer([]byte(doc))
+
+			buff.Write([]byte(doc))
+
+			doc, err := goquery.NewDocumentFromReader(buff)
+
+			So(err, ShouldBeNil)
+
+			el, err := http.NewHTMLElement(doc.Find("html"))
+
+			So(err, ShouldBeNil)
+
+			nt, err := el.XPath(context.Background(), values.NewString("count(//div)"))
+
+			So(err, ShouldBeNil)
+			So(nt.Type().String(), ShouldEqual, types.Float.String())
+		})
+
+		Convey("Attributes", func() {
+			buff := bytes.NewBuffer([]byte(`<!DOCTYPE html><body><div><a title="30"/></div></body></html>`))
+			godoc, err := goquery.NewDocumentFromReader(buff)
+			So(err, ShouldBeNil)
+
+			doc, err := http.NewRootHTMLDocument(godoc, "localhost:9090")
+			So(err, ShouldBeNil)
+
+			nt, err := doc.XPath(context.Background(), values.NewString("//a/@title"))
+
+			So(err, ShouldBeNil)
+			So(nt.Type().String(), ShouldEqual, types.Array.String())
+			So(nt.(*values.Array).First().Type().String(), ShouldEqual, types.String.String())
+			So(nt.(*values.Array).First().String(), ShouldEqual, "30")
+		})
+
+		Convey("Element node", func() {
+			buff := bytes.NewBuffer([]byte(`<!DOCTYPE html><body><div><a title="30"/></div></body></html>`))
+			godoc, err := goquery.NewDocumentFromReader(buff)
+			So(err, ShouldBeNil)
+
+			doc, err := http.NewRootHTMLDocument(godoc, "localhost:9090")
+			So(err, ShouldBeNil)
+
+			nt, err := doc.XPath(context.Background(), values.NewString("//div"))
+
+			So(err, ShouldBeNil)
+			So(nt.Type().String(), ShouldEqual, types.Array.String())
+			So(nt.(*values.Array).First().Type().String(), ShouldEqual, drivers.HTMLElementType.String())
+		})
 	})
 }
